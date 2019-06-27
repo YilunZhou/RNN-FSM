@@ -266,7 +266,7 @@ if __name__ == '__main__':
 
             tl.generate_bottleneck_data(gru_net, env, args.bn_episodes, bottleneck_data_path, cuda=args.cuda,
                                         eps=(0, 0.3), max_steps=args.generate_max_steps)
-            tl.generate_trajectories(env, 3, 5, gru_prob_data_path, gru_net, cuda=args.cuda, render=True)
+            tl.generate_trajectories(env, 3, 5, gru_prob_data_path, gru_net, cuda=args.cuda, render=(not args.no_render))
 
         # ***********************************************************************************
         # HX-QBN                                                                            *
@@ -286,7 +286,7 @@ if __name__ == '__main__':
             else:
                 gru_net.load_state_dict(torch.load(gru_net_path))
             gru_net.noise = False
-            env.spec.reward_threshold = gru_nn.test(gru_net, env, 5, log=True, cuda=args.cuda, render=False)
+            env.spec.reward_threshold = gru_nn.test(gru_net, env, 5, log=True, cuda=args.cuda, render=(not args.no_render))
             logging.info('Reward Threshold:' + str(env.spec.reward_threshold))
             target_net = lambda bottle_net: MMNet(gru_net, hx_qbn=bottle_net)
 
@@ -314,7 +314,7 @@ if __name__ == '__main__':
             else:
                 gru_net.load_state_dict(torch.load(gru_net_path))
             gru_net.noise = False
-            env.spec.reward_threshold = gru_nn.test(gru_net, env, 5, log=True, cuda=args.cuda, render=False)
+            env.spec.reward_threshold = gru_nn.test(gru_net, env, 5, log=True, cuda=args.cuda, render=(not args.no_render))
             logging.info('Reward Threshold:' + str(env.spec.reward_threshold))
             target_net = lambda bottle_net: MMNet(gru_net, obs_qbn=bottle_net)
             logging.info('Loading Data-Set ...')
