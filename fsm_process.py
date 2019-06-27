@@ -40,13 +40,13 @@ class ProcessFSM():
 
         return gru_net
 
-    def test_gru(self, trained_gru, gru_net_path, cuda):
+    def test_gru(self, trained_gru, gru_net_path, cuda, render=True):
         logging.info('Testing GRU!')
         trained_gru.load_state_dict(torch.load(gru_net_path))
         trained_gru.eval()
         trained_gru.noise = False
         no_episodes = 20
-        perf = gru_nn.test(trained_gru, self.env, no_episodes, log=True, cuda=cuda, render=True)
+        perf = gru_nn.test(trained_gru, self.env, no_episodes, log=True, cuda=cuda, render=render)
         logging.info('Average Performance:{}'.format(perf))
         return perf
 
