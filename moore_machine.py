@@ -11,6 +11,8 @@ from torch.autograd import Variable
 from tools import ensure_directory_exits
 from PIL import Image, ImageFont, ImageDraw
 
+import pickle
+
 logger = logging.getLogger(__name__)
 
 sys.setrecursionlimit(3000)
@@ -114,6 +116,7 @@ class MooreMachine:
         :param render: check to render environment
         :param cuda: check if cuda is available
         """
+        self.obs2encoding = {}
         net.eval()
         max_actions = 10000
         random.seed(seed)
@@ -143,6 +146,11 @@ class MooreMachine:
                         obs = obs.cuda()
                     critic, logit, next_state, (next_state_c, next_state_x), (_, obs_x) = net((obs, curr_state),
                                                                                               inspect=True)
+                    obs_tp = tuple(obs.detach().cpu().numpy().flat)
+                    obs_x_tp = tuple(obs_x.detach().cpu().numpy().flat)
+                    if obs_tp in self.obs2encoding:
+                        assert self.obs2encoding[obs_tp] == obs_x_tp
+                    self.obs2encoding[obs_tp] = obs_x_tp
                     prob = F.softmax(logit, dim=1)
                     next_action = int(prob.max(1)[1].cpu().data.numpy())
 
@@ -225,6 +233,12 @@ class MooreMachine:
             start_state = start_state.cuda()
         start_state_x = net.state_encode(start_state).data.cpu().numpy()[0]
         _, self.start_state = self._get_index(self.state_space, start_state_x, force=False)
+
+        self.obs2unmin = {}
+        for obs, obs_x in self.obs2encoding.items():
+            _, idx = self._get_index(self.obs_space, obs_x, force=False)
+            assert idx is not None
+            self.obs2unmin[obs] = idx
 
     def map_action(self, net, s_i, obs_i):
         """
@@ -388,6 +402,17 @@ class MooreMachine:
         self.obs_minobs_map = _obs_minobs_map
         self.minobs_obs_map = _minobs_obs_map
         self.minimized = True
+
+        # update obs_mapping information
+        rev_mapping = {}
+        for k, v in self.minobs_obs_map.items():
+            for ev in v:
+                assert ev not in rev_mapping
+                rev_mapping[ev] = k
+        self.obs2min = {}
+        for obs, idx in self.obs2unmin.items():
+            self.obs2min[obs] = rev_mapping[idx]
+        print('obs mappings built!')
 
     @staticmethod
     def traverse_compatible_states(states, compatibility_mat):
@@ -710,6 +735,12 @@ class MooreMachine:
             info_file.write('\n\nTrajectory info:' + '\n')
             info_file.write(self.trajectory.__str__())
         info_file.close()
+
+        if self.minimized: # have all obs mapping information at this time
+            path = '/'.join(info_file.name.split('/')[:-1])+'/'
+            pickle.dump(self.obs2encoding, open(path+'obs_to_encoding.pkl', 'wb'), pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.obs2unmin, open(path+'obs_to_unmin_states.pkl', 'wb'), pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.obs2min, open(path+'obs_to_min_states.pkl', 'wb'), pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':
