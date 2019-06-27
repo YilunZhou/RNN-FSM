@@ -159,7 +159,7 @@ def set_log(logPath, suffix=''):
         level=logging.DEBUG)
 
 
-def generate_bottleneck_data(net, env, episodes, save_path, cuda=False, eps=(0, 0), max_steps=None):
+def generate_bottleneck_data(net, env, episodes, save_path, cuda=False, eps=(0, 0), max_steps=None, render=True):
     """
     Generating bottleneck data for the given network.
 
@@ -189,7 +189,8 @@ def generate_bottleneck_data(net, env, episodes, save_path, cuda=False, eps=(0, 
                 act_count = 0
                 exploration_start_step = random.choice(range(0, max_steps, int(0.02 * max_steps)))
                 while not done:
-                    env.render()
+                    if render:
+                        env.render()
                     obs = Variable(torch.Tensor(obs)).unsqueeze(0)
                     if cuda:
                         hx = hx.cuda()
@@ -281,6 +282,7 @@ def get_args():
     parser.add_argument('--env_seed', type=int, default=0, help="Seed for the environment")
     parser.add_argument('--result_dir', default=os.path.join(os.getcwd(), 'results'),
                         help="Directory Path to store results")
+    parser.add_argument('--no_render', action='store_true', default=False, help='Flag for if rendering should be turned off.')
     args = parser.parse_args()
     args.cuda = (not args.no_cuda) and torch.cuda.is_available()
 

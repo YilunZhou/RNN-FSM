@@ -250,7 +250,7 @@ if __name__ == '__main__':
             if args.gru_train:
                 gru_net = fsm_object.train_gru(gru_net, gru_net_path, gru_plot_dir, train_data, args.batch_size, args.train_epochs, args.cuda, args.bn_episodes, bottleneck_data_path, args.generate_max_steps, gru_prob_data_path, gru_dir)
             if args.gru_test:
-                test_performance = fsm_object.test_gru(gru_net, gru_net_path, args.cuda)
+                test_performance = fsm_object.test_gru(gru_net, gru_net_path, args.cuda, render=(not args.no_render))
         # ***********************************************************************************
         # Generating BottleNeck training data                                               *
         # ***********************************************************************************
@@ -291,7 +291,7 @@ if __name__ == '__main__':
             target_net = lambda bottle_net: MMNet(gru_net, hx_qbn=bottle_net)
 
             logging.info('Loading Data-Set')
-            hx_train_data, hx_test_data, _, _ = tl.generate_bottleneck_data(gru_net, env, args.bn_episodes, bottleneck_data_path, cuda=args.cuda, max_steps=args.generate_max_steps)
+            hx_train_data, hx_test_data, _, _ = tl.generate_bottleneck_data(gru_net, env, args.bn_episodes, bottleneck_data_path, cuda=args.cuda, max_steps=args.generate_max_steps, render=(not args.no_render))
             if args.bhx_train:
                 fsm_object.bhx_train(bhx_net, hx_train_data, hx_test_data, bhx_net_path, bhx_plot_dir, args.batch_size, args.train_epochs, args.cuda, target_net, bhx_dir)
             if args.bhx_test:
