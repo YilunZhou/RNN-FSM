@@ -362,9 +362,9 @@ if __name__ == '__main__':
             tl.set_log(bgru_dir, _log_tag)
 
             if args.bgru_train:
-                fsm_object.bgru_train(bgru_net, gru_net, args.cuda, args.gru_scratch, trajectories_data_path, bgru_net_path, bgru_plot_dir, args.batch_size, args.train_epochs, gru_prob_data_path, bgru_dir)
+                fsm_object.bgru_train(bgru_net, gru_net, args.cuda, args.gru_scratch, trajectories_data_path, bgru_net_path, bgru_plot_dir, args.batch_size, args.train_epochs, gru_prob_data_path, bgru_dir, render=(not args.no_render))
             if args.bgru_test:
-                fsm_object.bgru_test(bgru_net, bgru_net_path, args.cuda)
+                fsm_object.bgru_test(bgru_net, bgru_net_path, args.cuda, render=(not args.no_render))
             if args.generate_fsm:
                 fsm_object.generate_fsm(bgru_net, bgru_net_path, args.cuda, unmin_moore_machine_path, bgru_dir, min_moore_machine_path)
             if args.evaluate_fsm:

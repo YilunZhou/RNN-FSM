@@ -68,7 +68,7 @@ def _train(net, optimizer, batch_data, batch_size, cuda=False, grad_clip=0.5, tr
     return net, round(sum(mse_loss_data) / batch_size, 5), round(sum(ce_loss_data) / batch_size, 5)
 
 
-def train(net, env, optimizer, model_path, plot_dir, train_data, batch_size, epochs, cuda=False, test_episodes=300, trunc_k=10):
+def train(net, env, optimizer, model_path, plot_dir, train_data, batch_size, epochs, cuda=False, test_episodes=300, trunc_k=10, render=True):
     """
     Supervised Learning to train the policy. Saves model in the given path.
 
@@ -107,7 +107,7 @@ def train(net, env, optimizer, model_path, plot_dir, train_data, batch_size, epo
 
     for epoch in range(epochs):
         # Testing before training as sometimes the combined model doesn't needs to be trained
-        test_perf = test(net, env, test_episodes, test_seeds=test_seeds, cuda=cuda, log=False, render=True)
+        test_perf = test(net, env, test_episodes, test_seeds=test_seeds, cuda=cuda, log=False, render=render)
         perf_data.append(test_perf)
         logger.info('epoch %d Test Performance: %f' % (epoch, test_perf))
         if best_i is None or perf_data[best_i] <= perf_data[-1]:

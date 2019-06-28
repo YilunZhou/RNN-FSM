@@ -86,8 +86,8 @@ class ProcessFSM():
         ox_test_mse = qbn.test(ox_net, obs_test_data, len(obs_test_data), cuda=cuda)
         logging.info('MSE : {}'.format(ox_test_mse))
 
-    def bgru_train(self, bgru_net, gru_net, cuda, gru_scratch, trajectories_data_path, bgru_net_path, bgru_plot_dir, batch_size, train_epochs, gru_prob_data_path, bgru_dir):
-        self.env.spec.reward_threshold = gru_nn.test(gru_net, self.env, 10, log=True, cuda=cuda, render=True)
+    def bgru_train(self, bgru_net, gru_net, cuda, gru_scratch, trajectories_data_path, bgru_net_path, bgru_plot_dir, batch_size, train_epochs, gru_prob_data_path, bgru_dir, render=True):
+        self.env.spec.reward_threshold = gru_nn.test(gru_net, self.env, 10, log=True, cuda=cuda, render=render)
         logging.info('Training Binary GRUNet!')
         bgru_net.train()
         _start_time = time.time()
@@ -100,13 +100,13 @@ class ProcessFSM():
             optimizer = optim.Adam(bgru_net.parameters(), lr=1e-4)
             train_data = tl.generate_trajectories(self.env, 3, 5, gru_prob_data_path, copy.deepcopy(bgru_net.gru_net).cpu())
             bgru_net = bgru_nn.train(bgru_net, self.env, optimizer, bgru_net_path, bgru_plot_dir, train_data, 5,
-                                     train_epochs, cuda, test_episodes=1, trunc_k=100)
+                                     train_epochs, cuda, test_episodes=1, trunc_k=100, render=render)
         tl.write_net_readme(bgru_net, bgru_dir, info={'time_taken': round(time.time() - _start_time, 4)})
 
-    def bgru_test(self, bgru_net, bgru_net_path, cuda):
+    def bgru_test(self, bgru_net, bgru_net_path, cuda, render=True):
         bgru_net.load_state_dict(torch.load(bgru_net_path))
         bgru_net.eval()
-        bgru_perf = bgru_nn.test(bgru_net, self.env, 1, log=True, cuda=cuda, render=True)
+        bgru_perf = bgru_nn.test(bgru_net, self.env, 1, log=True, cuda=cuda, render=render)
         logging.info('Average Performance: {}'.format(bgru_perf))
 
     def generate_fsm(self, bgru_net, bgru_net_path, cuda, unmin_moore_machine_path, bgru_dir, min_moore_machine_path):
