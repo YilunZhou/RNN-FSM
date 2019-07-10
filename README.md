@@ -153,6 +153,20 @@ Formation of MMN requires following multiple steps which could be found [here](#
     ```bash
     results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/
     ```
+10. Save clustered screenshots: If you want to save screenshots of the various states that were clustered, you can run the following script.
+    ```bash
+    python analysis/sample_obs_images.py
+    ```
+
+    Saved images will be stored in directory:
+    ```bash
+    results/Atari/PongDeterministic-v4/gru_32_hx_(64,100)_bgru/analysis
+    ```
+11. Analyze similarity of clustered screenshots: Assuming you have already saved the images, run this script to analyze how similar the clusters from different runs are. Results are printed out directly.
+
+    ```bash
+    python analysis/compare_image_clusters.py
+    ```
 
 ### Using pre-trained models
 
