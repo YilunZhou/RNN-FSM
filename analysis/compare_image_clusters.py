@@ -1,7 +1,7 @@
 # Script that analyzes how similar image clusters from two different runs are.
 # TODO: what's a good metric?
 # As a proof-of-concept, just match up exact image matches.
-# import cv2
+from clustering_utils import *
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
@@ -47,23 +47,8 @@ num_run1_images = sum([len(cluster) for cluster in run1_data.values()])
 num_run2_images = sum([len(cluster) for cluster in run2_data.values()])
 
 # At this point, have the data we want loaded into run1_data and run2_data, so need to compare.
-# First, build a 2d array that shows the overlap between the clusters.
-# Row value is the cluster for run1
-# Column value is the cluster for run2
-# Value is how many exact matches there are.
 max_length = max(len(run1_data.keys()), len(run2_data.keys()))
-cluster_overlap = np.zeros([max_length, max_length])
-
-for cluster1, images1 in run1_data.items():
-	for cluster2, images2 in run2_data.items():
-		exact_match_count = 0
-		for image1 in images1:
-			for image2 in images2:
-				# If every single pixel is the same, counts as a match.
-				if np.all(image1 == image2):
-					exact_match_count += 1
-					break
-		cluster_overlap[int(cluster1)][int(cluster2)] = exact_match_count
+cluster_overlap = create_clustering_matrix(run1_data, run2_data, max_length)
 print(cluster_overlap)
 
 # Now can do more complex analysis, like what is the optimal alignment and how much overlap is there?
@@ -73,17 +58,9 @@ max_value = max([max(row) for row in cluster_overlap])
 unmatched_values = max_value * np.ones([max_length, max_length]) - cluster_overlap
 # print(unmatched_values)
 
-row_ind, col_ind = linear_sum_assignment(unmatched_values)
-print(row_ind)
-print(col_ind)
-
-# Now, use those rows and columns to sum up how many actually match.
-sum_of_matches = 0
-for i, row_idx in enumerate(row_ind):
-	col_idx = col_ind[i]
-	sum_of_matches += cluster_overlap[row_idx][col_idx]
+sum_of_matches = create_optimal_alignment(cluster_overlap, max_length, print_alignment=True)
 
 # Print out the key results.
 print("Run1 count", num_run1_images)
 print("Run2 count", num_run2_images)
-print(sum_of_matches)
+print("Number of matches across runs", sum_of_matches)
