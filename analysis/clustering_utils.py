@@ -1,3 +1,4 @@
+from __future__ import division
 # Here's a way to generate baseline analysis.
 # Start with some number of clusters and some number of items. Randomly assign them.
 import matplotlib
@@ -8,7 +9,7 @@ from scipy import stats
 from scipy.optimize import linear_sum_assignment
 
 
-def create_random_allocation(clusters_to_sizes):
+def create_random_allocation(clusters_to_sizes,  num_small_ints=1000, upper_range_offset=1000):
 	num_total_items = sum([val for key, val in clusters_to_sizes.items()])
 	# print("Num total items", num_total_items)  # For debugging
 	permuted_ints = np.random.permutation(num_total_items)
@@ -17,7 +18,10 @@ def create_random_allocation(clusters_to_sizes):
 	for key, num_items in clusters_to_sizes.items():
 		items_for_key = []
 		for _ in range(num_items):
-			items_for_key.append(permuted_ints[int_idx])
+			value_to_assign = permuted_ints[int_idx]
+			if int_idx >= num_small_ints:
+				value_to_assign += upper_range_offset
+			items_for_key.append(value_to_assign)
 			int_idx += 1
 		allocation[key] = items_for_key
 	return allocation
@@ -87,9 +91,13 @@ def count_maximal_overlap(clusters1, clusters2):
 						sum_of_matches += 1
 	return sum_of_matches
 
-def run_cluster_simulation(cluster_sizes):
-	clusters1 = create_random_allocation(cluster_sizes)
-	clusters2 = create_random_allocation(cluster_sizes)
+# Take in two dictionaries mapping cluster ids to number of images in each cluster.
+# Also accept a parameter that says how many of the ints in there should be shared
+# at all. This sort of represents when two policies diverge and therefore have no
+# chance of overlapping again.
+def run_cluster_simulation(cluster_sizes1, cluster_sizes2, num_vals_common):
+	clusters1 = create_random_allocation(cluster_sizes1)
+	clusters2 = create_random_allocation(cluster_sizes2, num_small_ints=num_vals_common)
 
 	max_length = max(len(clusters1.keys()), len(clusters2.keys()))
 	# Now create the overlap
@@ -98,23 +106,37 @@ def run_cluster_simulation(cluster_sizes):
 	sum_of_overlap = create_optimal_alignment(overlap, max_length)
 	return sum_of_overlap
 
-def run_baselines():
-	cluster_sizes = {0: 1, 1: 2, 2: 3}  # 3 clusters of size 5 each
-	run_1_cluster_size = {0 : 17, 1 : 1, 2 : 1, 3 : 167, 4 : 79, 5 : 20, 6 : 20, 7 : 15, 8 : 20, 9 : 18, 10 : 14, 11 : 1}
+def run_baselines(clusters1, clusters2, num_vals_common, file_suffix=''):
+	clusters1_sizes = {}
+	clusters2_sizes = {}
+	for key, val in clusters1.items():
+		clusters1_sizes[int(key)] = len(val)
+	for key, val in clusters2.items():
+		clusters2_sizes[int(key)] = len(val)
 
-	num_values = sum([cluster for cluster in run_1_cluster_size.values()])
+	num_values1 = sum([cluster for cluster in clusters1_sizes.values()])
+	num_values2 = sum([cluster for cluster in clusters2_sizes.values()])
 
-	num_simulations = 1000
-	sim_results = np.zeros(num_simulations)
+	num_simulations = 100
+	raw_count_results = np.zeros(num_simulations)
+	percent_match_total_results = np.zeros(num_simulations)
+	percent_match_common_results = np.zeros(num_simulations)
 	for i in range(num_simulations):
 		print("Running sim number", i)
-		sum_for_sim = run_cluster_simulation(run_1_cluster_size)
-		sim_results[i] = sum_for_sim
+		sum_for_sim = run_cluster_simulation(clusters1_sizes, clusters2_sizes, num_vals_common)
+		raw_count_results[i] = sum_for_sim
+		percent_match_total_results[i] = sum_for_sim / min([num_values1, num_values2])
+		percent_match_common_results[i] = sum_for_sim / num_vals_common
 
 	# Now the simulations are all over: print statistics and show histogram.
-	print(stats.describe(sim_results))
-	hist, _ = np.histogram(sim_results, bins=np.arange(num_values))
-
-	plt.plot(hist)
-	plt.savefig('analysis/random_trials.png')
+	raw_count_analysis = stats.describe(raw_count_results)
+	percent_match_total_analysis = stats.describe(percent_match_total_results)
+	percent_match_common_analysis = stats.describe(percent_match_common_results)
+	raw_hist, _ = np.histogram(raw_count_results, bins=np.arange(min([num_values1, num_values2])))
+	percent_bins = np.arange(start=0, stop=1.05, step=0.05)
+	total_hist, _ = np.histogram(percent_match_total_results, bins=percent_bins)
+	common_hist, _ = np.histogram(percent_match_common_results, bins=percent_bins)
+	plt.plot(percent_bins[:-1], common_hist)
+	plt.savefig('analysis/common_hist_' + file_suffix + '.png')
 	plt.close()
+	return raw_count_analysis, percent_match_total_analysis, percent_match_common_analysis
