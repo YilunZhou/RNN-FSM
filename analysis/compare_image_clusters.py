@@ -64,3 +64,10 @@ sum_of_matches = create_optimal_alignment(cluster_overlap, max_length, print_ali
 print("Run1 count", num_run1_images)
 print("Run2 count", num_run2_images)
 print("Number of matches across runs", sum_of_matches)
+
+# As a baseline, just count how many of the images from different runs are the same, ignoring
+# the actual clusters they're put into.
+verify_no_repeats(run1_data)
+verify_no_repeats(run2_data)
+max_overlap = count_maximal_overlap(run1_data, run2_data)
+print("Max overlap", max_overlap)
