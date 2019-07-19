@@ -23,6 +23,8 @@ from torch.autograd import Variable
 # from env_wrapper import atari_wrapper
 from moore_machine import MooreMachine
 
+import gym
+
 class ObsQBNet(nn.Module):
     """
     Quantized Bottleneck Network(QBN) for observation features.
@@ -94,24 +96,18 @@ class GRUNet(nn.Module):
     """
 
     def __init__(self, input_size, gru_cells, total_actions):
+        assert args.env == 'CartPole-v1', 'GRUNet currently only works with CartPole-v1'
         super(GRUNet, self).__init__()
         self.gru_units = gru_cells
         self.noise = False
-        self.conv1 = nn.Conv2d(input_size, 32, 3, stride=2, padding=1)
-        self.conv2 = nn.Conv2d(32, 32, 3, stride=2, padding=1)
-        self.conv3 = nn.Conv2d(32, 16, 3, stride=2, padding=1)
-        self.conv4 = nn.Conv2d(16, 8, 3, stride=2, padding=1)
-
-        self.input_ff = nn.Sequential(self.conv1, nn.ReLU(),
-                                      self.conv2, nn.ReLU(),
-                                      self.conv3, nn.ReLU(),
-                                      self.conv4, nn.ReLU6())
-        self.input_c_features = 8 * 5 * 5
-        self.input_c_shape = (8, 5, 5)
-        self.gru = nn.GRUCell(self.input_c_features, gru_cells)
-
-        self.critic_linear = nn.Linear(gru_cells, 1)
-        self.actor_linear = nn.Linear(gru_cells, total_actions)
+        self.layer1 = nn.Linear(in_features=4, out_features=4, bias=True)
+        self.layer2 = nn.Linear(in_features=4, out_features=4, bias=True)
+        self.input_c_features = 4
+        self.relu6 = nn.ReLU6()
+        self.relu = nn.ReLU()
+        self.gru = nn.GRUCell(4, gru_cells)
+        self.critic_linear = nn.Linear(in_features=32, out_features=1, bias=True)
+        self.actor_linear = nn.Linear(in_features=32, out_features=2, bias=True)
 
         self.apply(tl.weights_init)
         self.actor_linear.weight.data = tl.normalized_columns_initializer(self.actor_linear.weight.data, 0.01)
@@ -124,7 +120,7 @@ class GRUNet(nn.Module):
 
     def forward(self, input, input_fn=None, hx_fn=None, inspect=False):
         input, hx = input
-        c_input = self.input_ff(input)
+        c_input = self.relu6(self.layer2(self.relu(self.layer1(input))))
         c_input = c_input.view(-1, self.input_c_features)
         input, input_x = input_fn(c_input) if input_fn is not None else (c_input, c_input)
         ghx = self.gru(input, hx)
@@ -204,11 +200,12 @@ class MMNet(nn.Module):
 if __name__ == '__main__':
     args = tl.get_args()
     # env = atari_wrapper(args.env)
-    env.seed(args.env_seed)
+    env = gym.make(args.env)
+    # env.seed(args.env_seed) # seed is 0 by default
     obs = env.reset()
 
     # create directories to store results
-    result_dir = tl.ensure_directory_exits(os.path.join(args.result_dir, 'Atari'))
+    result_dir = tl.ensure_directory_exits(os.path.join(args.result_dir, 'Control'))
     env_dir = tl.ensure_directory_exits(os.path.join(result_dir, args.env))
 
     gru_dir = tl.ensure_directory_exits(os.path.join(env_dir, 'gru_{}'.format(args.gru_size)))
@@ -265,7 +262,7 @@ if __name__ == '__main__':
             gru_net.eval()
 
             tl.generate_bottleneck_data(gru_net, env, args.bn_episodes, bottleneck_data_path, cuda=args.cuda,
-                                        eps=(0, 0.3), max_steps=args.generate_max_steps)
+                                        eps=(0, 0.3), max_steps=args.generate_max_steps, render=(not args.no_render))
             tl.generate_trajectories(env, 3, 5, gru_prob_data_path, gru_net, cuda=args.cuda, render=(not args.no_render))
 
         # ***********************************************************************************
