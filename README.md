@@ -5,11 +5,13 @@ This is the implementation of Moore Machine Network (MMN) introduced in the work
 If you find it useful in your research, please cite it using :
 
 ```
-@article{koul2018learning,
+@inproceedings{
+  koul2018learning,
   title={Learning Finite State Representations of Recurrent Policy Networks},
-  author={Koul, Anurag and Greydanus, Sam and Fern, Alan},
-  journal={arXiv preprint arXiv:1811.12530},
-  year={2018}
+  author={Anurag Koul and Alan Fern and Sam Greydanus},
+  booktitle={International Conference on Learning Representations},
+  year={2019},
+  url={https://openreview.net/forum?id=S1gOpsCctm},
 }
 ```
 
@@ -23,7 +25,7 @@ If you find it useful in your research, please cite it using :
     ```
 
 ## Usage
-We use ```main_mce.py , main_tomita.py``` and ```main_atari.py``` for experimenting with [Mode Counter Environment(a.k.a Gold Rush) , Tomita Grammar](https://github.com/koulanurag/gym_x) and Atari ; respectively.
+We use ```main_mce.py , main_tomita.py``` and ```main_atari.py``` for experimenting with [Mode Counter Environment(a.k.a Gold Rush) , Tomita Grammar](https://github.com/koulanurag/gym_x) and Atari, respectively.
 
 In the following, we describe usage w.r.t ```main_atari.py```. However, the same would apply for other cases.
 
@@ -276,7 +278,7 @@ Presenting the Mode Counter Environments(MCE) results, number of states and obse
     <td align="center">4</td>
     <td align="center">100</td>
     <td align="center">-</td>
-    <td align="center">5</td>
+    <td align="center">15</td>
     <td align="center">6</td>
     <td align="center">100</td>
     <td align="center">10</td>
