@@ -97,17 +97,20 @@ class GRUNet(nn.Module):
         super(GRUNet, self).__init__()
         self.gru_units = gru_cells
         self.noise = False
+        # Added by Mycal. Different games require a differently-shaped net.
+        changing_dim = 8  # For Pong, Space Invaders, Chopper Command and some others, set to 8
+        # changing_dim = 4  # For Bowling, Freeway, Boxing and some others, set to 4
         self.conv1 = nn.Conv2d(input_size, 32, 3, stride=2, padding=1)
         self.conv2 = nn.Conv2d(32, 32, 3, stride=2, padding=1)
         self.conv3 = nn.Conv2d(32, 16, 3, stride=2, padding=1)
-        self.conv4 = nn.Conv2d(16, 8, 3, stride=2, padding=1)
+        self.conv4 = nn.Conv2d(16, changing_dim, 3, stride=2, padding=1)
 
         self.input_ff = nn.Sequential(self.conv1, nn.ReLU(),
                                       self.conv2, nn.ReLU(),
                                       self.conv3, nn.ReLU(),
                                       self.conv4, nn.ReLU6())
-        self.input_c_features = 8 * 5 * 5
-        self.input_c_shape = (8, 5, 5)
+        self.input_c_features = changing_dim * 5 * 5
+        self.input_c_shape = (changing_dim, 5, 5)
         self.gru = nn.GRUCell(self.input_c_features, gru_cells)
 
         self.critic_linear = nn.Linear(gru_cells, 1)
@@ -258,14 +261,16 @@ if __name__ == '__main__':
             tl.set_log(data_dir, 'generate_bn_data')
             logging.info('Generating Data-Set for Later Bottle Neck Training')
             gru_net = GRUNet(len(obs), args.gru_size, int(env.action_space.n))
-            gru_net.load_state_dict(torch.load(gru_net_path))
+
+            state_dict = torch.load(gru_net_path)
+            gru_net.load_state_dict(state_dict)
             gru_net.noise = False
             if args.cuda:
                 gru_net = gru_net.cuda()
             gru_net.eval()
 
             tl.generate_bottleneck_data(gru_net, env, args.bn_episodes, bottleneck_data_path, cuda=args.cuda,
-                                        eps=(0, 0.3), max_steps=args.generate_max_steps)
+                                        eps=(0, 0.3), max_steps=args.generate_max_steps, render=(not args.no_render))
             tl.generate_trajectories(env, 3, 5, gru_prob_data_path, gru_net, cuda=args.cuda, render=(not args.no_render))
 
         # ***********************************************************************************
